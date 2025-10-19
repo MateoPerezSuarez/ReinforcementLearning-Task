@@ -1,0 +1,36 @@
+{
+  "best_trials": [
+    {
+      "value": -200.0,
+      "params": {
+        "algorithm": "SARSA",
+        "alpha": 0.10401663679887314,
+        "gamma": 0.9134831480715462,
+        "epsilon": 0.2403950683025824
+      },
+      "trial_number": 0
+    },
+    {
+      "value": -200.0,
+      "params": {
+        "algorithm": "SARSA",
+        "alpha": 0.1595857358814127,
+        "gamma": 0.9017674538947098,
+        "epsilon": 0.9729188669457949
+      },
+      "trial_number": 1
+    },
+    {
+      "value": -200.0,
+      "params": {
+        "algorithm": "Q-Learning",
+        "alpha": 0.020492680115417352,
+        "gamma": 0.92647971031637,
+        "epsilon": 0.5722807884690141
+      },
+      "trial_number": 2
+    }
+  ],
+  "num_trials": 150,
+  "timestamp": "2025-10-19T16:21:46.420391"
+}
