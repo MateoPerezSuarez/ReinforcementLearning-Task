@@ -1,76 +1,64 @@
-# Algoritmo Q-Learning
-## Configuración Inicial: El Entorno y la Q-Tabla
-### Paso 1: Entorno y Espacio de Estados Continuo (MountainCar)
-En el entorno MountainCar-v0 el estado del coche se describe con dos números continuos (decimales):
+# Q-Learning Algorithm
+## Initial Configuration: Environment and Q-Table
+### Step 1: Environment and Continuous State Space (MountainCar)
+In the MountainCar-v0 environment, the car's state is described with two continuous numbers (decimals):
 
-- Posición: Un valor entre $-1.2$ y $0.6$.
-- Velocidad: Un valor entre $-0.07$ y $0.07$
+- Position: A value between $-1.2$ and $0.6$.
+- Velocity: A value between $-0.07$ and $0.07$
 
-Como Q-Learning necesita estados discretos (enteros) para indexar una tabla, no podemos usar la posición y la velocidad directamente
+Since Q-Learning needs discrete states (integers) to index a table, we cannot use position and velocity directly.
 
-### Paso 2: La Discretización de Estados (El Mapeo) 🗺️
-Para que el Q-Learning funcione, debes discretizar el espacio de estados. Esto significa dividir el rango continuo de la posición y la velocidad en un número finito de bins.
+### Step 2: State Discretization (The Mapping)
+For Q-Learning to work, we have to discretize the state space. This means dividing the continuous range of position and velocity into a finite number of bins.
 
-**ESTRO DESCRIBIRLO CON LOS VALORES QUE USEMOS:** Si decides usar 20 bins para la posición y 20 para la velocidad, tendrías un total de $20 \times 20 = 400$ estados discretos.Una posición real como $-0.5532$ podría mapearse al bin de posición número 5, y una velocidad de $0.0211$ al bin de velocidad número 12.El estado discreto es ahora el par de índices $(5, 12)$.
+We have implemented a `DiscretizedObservationWrapper` that allows Optuna to optimize the number of bins between **20-25** for both dimensions. This configuration creates between 400 (20×20) and 625 (25×25) discrete states, finding the optimal balance between granularity and computational efficiency for convergence in **5000 episodes**.
 
-### Paso 3: Inicialización de la Q-Tabla
-La Q-Tabla es la "memoria" del agente. Es una tabla tridimensional donde se almacenan los valores de "calidad" o recompensa esperada.
+### Step 3: Q-Table Initialization
+The Q-Table is the agent's "memory". It is a two-dimensional table where "quality" or expected reward values are stored.
 
-- Dimensiones: (Bins de Posición) $\times$ (Bins de Velocidad) $\times$ (Número de Acciones).
-- Para MountainCar: $N_{bins} \times N_{bins} \times 3$ (Las 3 acciones son: empujar izquierda, no hacer nada, empujar derecha).
-- Contenido Inicial: Todos los valores $Q(s, a)$ se inicializan a cero o a un número pequeño y aleatorio. Esto significa que al principio, el agente piensa que todas las acciones son igual de inútiles (o útiles) en todas las situaciones.
+- **Dimensions**: `(env.observation_space.n, env.action_space.n)` where the wrapper converts the 2D space to a unique index.
+- **For MountainCar**: Between 1,200 and 1,875 total Q values (discrete states × 3 actions).
+- **Initialization**: `q_table = np.zeros(...)` - all Q(s,a) values start at zero.
 
-## El Bucle de Entrenamiento: Episodios y Pasos
-El entrenamiento ocurre a lo largo de muchos episodios. Un episodio comienza con el coche en la posición inicial y termina cuando alcanza la bandera (meta) o el número máximo de pasos.
+## The Training Loop: Episodes and Steps
+**Implemented configuration**: 5000 episodes per trial, with initial epsilon = 1.0 and decay optimized by Optuna between 0.995-0.9999.
 
-### Paso 4: Selección de la Acción ($\epsilon$-Greedy)
-En cada paso del episodio, el agente debe decidir qué acción tomar:
-- **Exploración** (Probabilidad $\epsilon$): El agente elige una acción al azar. Esto es crucial para descubrir nuevas estrategias que podrían ser mejores.
-- **Explotación** (Probabilidad $1-\epsilon$): El agente consulta la Q-Tabla para el estado actual $(i_{pos}, i_{vel})$ y elige la acción con el valor Q más alto (la que ha sido más exitosa en el pasado).
+### Step 4: Action Selection ($\epsilon$-Greedy)
+**Implementation**: Initial `epsilon = 1.0`, decay `epsilon = max(0.05, epsilon * epsilon_decay)` where `epsilon_decay` is optimized by Optuna in [0.995, 0.9999]. Maintains 5% minimum exploration.
 
-Al inicio, $\epsilon$ es alto (ej. 1.0), por lo que el agente explora mucho. Con el tiempo, $\epsilon$ decae, y el agente explota (usa lo que ha aprendido) cada vez más.
+### Step 5: Environment Interaction
+The agent executes the selected action ($a$) in the current state ($s$). The environment returns:
 
-### Paso 5: Interacción con el Entorno
-El agente ejecuta la acción seleccionada ($a$) en el estado actual ($s$). El entorno devuelve:
+1. A new state ($s'$).
+2. A reward ($R$): For MountainCar, it's $-1$ per step (penalty) and $0$ if it reaches the goal.
+3. Whether the episode has ended (done).
 
-1. Un nuevo estado ($s'$).
-2. Una recompensa ($R$): Para MountainCar, es $-1$ por cada paso (castigo) y $0$ si alcanza la meta.
-3. Si el episodio ha terminado (done).
+### Step 6: Q-Table Update
+**Implemented equation**: `new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)`
 
-### Paso 6: El Corazón del Q-Learning (Actualización de la Q-Tabla)
-Este es el paso fundamental. El agente usa la información que acaba de recibir ($s, a, R, s'$) para actualizar el valor $Q(s, a)$ usando la Ecuación de Bellman para Q-Learning:
-$$\text{Nuevo } Q(s, a) \leftarrow Q(s, a) + \alpha \left[ R + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]$$
-1. **El Error Temporal (TD Error):** Lo que está entre corchetes es el error de predicción (qué tan equivocado estaba el valor Q anterior).
-    - **Lo Esperado:** $R + \gamma \max_{a'} Q(s', a')$
-        - **$R$:** La recompensa inmediata recibida.
-        - **$\gamma \max_{a'} Q(s', a')$:** La mejor recompensa futura que se puede obtener desde el nuevo estado $s'$ (el valor Q más alto de las acciones posibles en $s'$). Esta es la parte off-policy.
-    - **Lo Predicho:** $Q(s, a)$ (el valor Q que tenías antes de la acción).
-2. **La Actualización:** Multiplicas el error por la tasa de aprendizaje ($\alpha$) y lo añades al valor $Q(s, a)$ antiguo.
-ACTUALIZAR CON LO QUE HAGAMOS CON EL VALOR DE $\alpha$
-    - Si $\alpha$ es grande, el agente aprende rápido pero puede ser inestable.
-    - Si $\alpha$ es pequeño, el aprendizaje es lento pero más estable.
+**Hyperparameters optimized by Optuna:**
+- **α (learning rate)**: [0.05, 0.5] - balance between speed and stability
+- **γ (discount factor)**: [0.9, 0.999] - importance of future rewards for MountainCar
 
-### Paso 7: Transición
-El nuevo estado $s'$ se convierte en el estado actual $s$, y el proceso se repite desde el Paso 4 hasta que el episodio termina.
+### Step 7: Transition
+The new state $s'$ becomes the current state $s$, and the process repeats from Step 4 until the episode ends.
 
-## 3. Optuna: Encontrando los Mejores Hiperparámetros
-Los hiperparámetros ($\alpha, \gamma, \epsilon$ decay, $N_{bins}$) controlan el aprendizaje. Elegirlos manualmente es difícil. Optuna automatiza esto.
-### Paso 8: La Función Objetivo
-Defines una función (objective) que hace lo siguiente:
-- **Pregunta a Optuna:** "Dame un valor para $\alpha$, dame un valor para $\gamma$, etc."
-- **Entrena:** Ejecuta todo el proceso de Q-Learning (Pasos 1 a 7) con esos valores.
-- **Evalúa:** Mide el rendimiento (ej., la recompensa media de los últimos 100 episodios).Informa a Optuna: Devuelve esa recompensa media.
+## 3. Optuna: Finding the Best Hyperparameters
+**Study configuration**: 30 trials, maximizing the mean reward of the last 100 episodes.
 
-### Paso 9: El Estudio de Optimización
-Optuna ejecuta esta función objetivo (ej., 100 veces)ACTUALIZAR CON LOS PASOS QUE HAGAMOS Y LA DESCRIPCION DEL NUESTRO. En cada prueba, utiliza algoritmos inteligentes (TPE, CMA-ES) para sugerir combinaciones de hiperparámetros que probablemente den mejores resultados basándose en las pruebas anteriores.
+**Hyperparameters**
+- `alpha = trial.suggest_float('alpha', 0.05, 0.5)`
+- `gamma = trial.suggest_float('gamma', 0.9, 0.999)` 
+- `n_bins = trial.suggest_int('n_bins', 20, 25)`
+- `epsilon_decay = trial.suggest_float('epsilon_decay', 0.995, 0.9999)`
 
-### Paso 10: El Resultado Óptimo
-Al finalizar, Optuna te dirá: "La mejor combinación de hiperparámetros es esta, y con ellos, el agente consiguió esta recompensa media máxima."
+**Process**: Each trial trains for 5000 episodes, evaluates with `np.mean(rewards_history[-100:])`, and reports for intelligent pruning. Optuna learns from previous trials to suggest better combinations using the TPE algorithm.
 
-Resumen del Flujo Lógico:
-1. Optuna Sugiere Parámetros ($\alpha, \gamma, N_{bins}$).
-2. Q-Learning Inicializa la Q-Tabla usando $N_{bins}$.
-3. Episodios: El agente interactúa y $\epsilon$ decae.
-4. Actualización: Se usa $\alpha$ y $\gamma$ en la Ecuación de Bellman.
-5. Rendimiento: Se calcula la recompensa media.
-6. Optuna Aprende: Optuna usa este resultado para elegir mejores parámetros para la siguiente prueba.
+### Optimization Results
+The results of the three most successful combinations during hyperparameter exploration are as follows:
+
+| Combination | Alpha | Gamma | N_bins | Epsilon_decay |
+|-------------|-------|-------|--------|---------------|
+| 1st | 0.1436 | 0.9972 | 23 | 0.9953 |
+| 2nd | 0.2237 | 0.9690 | 20 | 0.9974 |
+| 3rd | 0.1695 | 0.9794 | 22 | 0.9990 |
