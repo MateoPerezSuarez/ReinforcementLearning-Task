@@ -57,8 +57,8 @@ The new state $s'$ becomes the current state $s$, and the process repeats from S
 ### Optimization Results
 The results of the three most successful combinations during hyperparameter exploration are as follows:
 
-| Combination | Alpha | Gamma | N_bins | Epsilon_decay |
+| Combination | Alpha | Gamma | Discretization (Pos/Vel) | Epsilon_decay |
 |-------------|-------|-------|--------|---------------|
-| 1st | 0.1436 | 0.9972 | 23 | 0.9953 |
-| 2nd | 0.2237 | 0.9690 | 20 | 0.9974 |
-| 3rd | 0.1695 | 0.9794 | 22 | 0.9990 |
+| 1st | 0.3682 | 0.9769 | [32, 23] | 0.9969 |
+| 2nd | 0.2693 | 0.9711 | [28, 24] | 0.9996 |
+| 3rd | 0.3946 | 0.9780 | [31, 24] | 0.9989 |
