@@ -7,14 +7,14 @@ from utils import DiscretizedObservationWrapper, EpsilonGreedyPolicy
 # Training Hyperparameters
 EPSILON = 1.0 
 N_STEPS_TRIAL = 500_000
-PRUNING_REPORT_INTERVAL = 500
+PRUNING_REPORT_INTERVAL = 50000
 
 def objective(trial):
 
     alpha = trial.suggest_float('alpha', 0.05, 0.5)
     gamma = trial.suggest_float('gamma', 0.9, 0.999)
-    n_bins_pos = trial.suggest_int('n_bins_pos', 20, 50)
-    n_bins_vel = trial.suggest_int('n_bins_vel', 20, 50)
+    n_bins_pos = trial.suggest_int('n_bins_pos', 20, 35)
+    n_bins_vel = trial.suggest_int('n_bins_vel', 20, 35)
     n_bins = [n_bins_pos, n_bins_vel]
     epsilon_decay = trial.suggest_float('epsilon_decay', 0.995, 0.9999)
 

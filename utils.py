@@ -24,17 +24,14 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
 
         self.bin_widths = (self.high - self.low) / self.n_bins
         
-        # LÍNEA CORREGIDA: Utilizar np.prod para multiplicar los elementos de la lista/array de bins
         total_discrete_states = np.prod(self.n_bins)
         
         self.observation_space = Discrete(total_discrete_states)
 
     def observation(self, observation):
-        # Escala la observación a un índice discreto para cada dimensión
         clipped_obs = np.clip(observation, self.low, self.high - 1e-6)
         discrete_obs = ((clipped_obs - self.low) / self.bin_widths).astype(int)
         
-        # Convierte el vector de índices discretos a un índice único (unidimensional)
         return np.ravel_multi_index(discrete_obs, self.n_bins)
 
 
