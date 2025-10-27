@@ -164,15 +164,9 @@ if __name__ == "__main__":
     print("="*80)
     print("Q-LEARNING TRAINING - HYPERPARAMETER COMPARISON")
     print("="*80)
-    print("\nTo visualize results in real-time, run in another terminal:")
-    print("  tensorboard --logdir=runs")
-    print("  Then open: http://localhost:6006\n")
-    print("="*80)
-    
     # 1st combination (best)
-    print("\n[1/3] Training: HIGH RESOLUTION")
+    print("\n[1/3] Training")
     print("-" * 80)
-    print("Strategy: More bins for better state representation")
     print("Config: alpha=0.3682, gamma=0.9769, pos_bins=32, vel_bins=23, eps_decay=0.9969")
     comb1_rewards, comb1_lengths = train_q_learning(
         alpha=0.3682,
@@ -184,9 +178,8 @@ if __name__ == "__main__":
     )
     
     # Configuration 2
-    print("[2/3] Training: BALANCED")
+    print("[2/3] Training")
     print("-" * 80)
-    print("Strategy: Balance between resolution and learning speed")
     print("Config: alpha=0.2693, gamma=0.9711, pos_bins=28, vel_bins=24, eps_decay=0.9996")
     comb2_rewards, comb2_lengths = train_q_learning(
         alpha=0.2693,
@@ -198,9 +191,8 @@ if __name__ == "__main__":
     )
     
     # Configuration 3
-    print("[3/3] Training: FAST LEARNING")
+    print("[3/3] Training")
     print("-" * 80)
-    print("Strategy: Fewer bins and higher learning rate for faster convergence")
     print("Config: alpha=0.3946, gamma=0.9780, pos_bins=31, vel_bins=24, eps_decay=0.993")
     comb3_rewards, comb3_lengths = train_q_learning(
         alpha=0.3946,
@@ -217,14 +209,12 @@ if __name__ == "__main__":
     print("="*80)
     print(f"{'Configuration':<20} {'Final Avg Reward':>18} {'Final Avg Length':>18}")
     print("-"*80)
-    print(f"{'High Resolution':<20} {np.mean(comb1_rewards[-1000:]):>18.2f} {np.mean(comb1_lengths[-1000:]):>18.1f}")
-    print(f"{'Balanced':<20} {np.mean(comb2_rewards[-1000:]):>18.2f} {np.mean(comb2_lengths[-1000:]):>18.1f}")
-    print(f"{'Fast Learning':<20} {np.mean(comb3_rewards[-1000:]):>18.2f} {np.mean(comb3_lengths[-1000:]):>18.1f}")
+    print(f"{'1st Combination':<20} {np.mean(comb1_rewards[-1000:]):>18.2f} {np.mean(comb1_lengths[-1000:]):>18.1f}")
+    print(f"{'2nd Combination':<20} {np.mean(comb2_rewards[-1000:]):>18.2f} {np.mean(comb2_lengths[-1000:]):>18.1f}")
+    print(f"{'3rd Combination':<20} {np.mean(comb3_rewards[-1000:]):>18.2f} {np.mean(comb3_lengths[-1000:]):>18.1f}")
     print("="*80)
     print("\n✓ All training sessions completed!")
     print("\nTo compare results:")
-    print("  1. Run: tensorboard --logdir=runs")
-    print("  2. Open: http://localhost:6006")
-    print("  3. Check the 'HPARAMS' tab for side-by-side comparison")
-    print("  4. Use the 'SCALARS' tab to compare learning curves")
+    print("-> Run: tensorboard --logdir=runs")
+    print("-> Open: http://localhost:6006")
     print("="*80)
